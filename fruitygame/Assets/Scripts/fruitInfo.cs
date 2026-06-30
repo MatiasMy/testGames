@@ -5,4 +5,5 @@ using UnityEngine;
 public class fruitInfo : MonoBehaviour
 {
     public int fruitID;
+    public int column;
 }

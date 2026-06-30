@@ -3,35 +3,38 @@ using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
 
-public class gameScript : MonoBehaviour
+public class gameScript : MonoBehaviour //HOLD BUTTONS WORK VISUALLY, SOMETIMES DOESNT HOLD, NOT SURE WHY. AFTER FIXING HOLD BUTTONS CONSIDER DOING SPRITES, ANIMATIONS, ADDING SOUNDS OR STARTING SHOP/TOKENS
 {
     public List<GameObject> fruits;
     public List<GameObject> fruitPositions;
+    public List<GameObject> holdButtons;
     private List<GameObject> spawnedFruits = new List<GameObject>();
     public TMP_Text winTxt;
     public TMP_Text moneyTxt;
     public int money = 100;
     private float pointsWon = 0;
-    private int tempID = 1;
     private List<Vector2Int> wins = new List<Vector2Int>();
     private bool cashIn = false;
-    public int amountOfRerolls = 2;
+    public int amountOfHolds = 2;
     public GameObject unpressed;
     public GameObject pressed;
+    private bool spadeMultiply = false;
+    private int tempID = 0;
+    private int fristHold = 0;
+    private int secondHold = 0;
 
     void Start()
     {
         winTxt.text = "";
         moneyTxt.text = "points " + pointsWon;
     }
-
     public void play()  //called when the play button is pressed
     {
         if (cashIn == true)
         {
             checkForWinConditions(); //check for win conditions after the fruits have been spawned
             cashIn = false;
-            amountOfRerolls = 0;
+            amountOfHolds = 0;
             moneyTxt.text = "points " + pointsWon;
             winTxt.text = "";
             unpressed.SetActive(true);
@@ -43,33 +46,109 @@ public class gameScript : MonoBehaviour
             pressed.SetActive(true);
             unpressed.SetActive(false);
             cashIn = true;
-            amountOfRerolls = 2;
+            amountOfHolds = 2;
+            foreach (GameObject button in holdButtons)
+            {
+                button.transform.Find("hold_red").gameObject.SetActive(false);
+                button.transform.Find("hold_pressed").gameObject.SetActive(false);
+                button.transform.Find("hold").gameObject.SetActive(true);
+            }
         }
-        foreach (GameObject fruit in spawnedFruits) //clear the previous fruits from the screen
+
+        if (fristHold == 0)
         {
-            Destroy(fruit);
+            foreach (GameObject fruit in spawnedFruits) //clear the previous fruits from the screen
+            {
+                Destroy(fruit);
+            }
+
+            spawnedFruits.Clear();
         }
 
-        spawnedFruits.Clear();
-
-        foreach (GameObject fruitPosition in fruitPositions)    //spawn new fruits
-        {
-            GameObject randFruit = Instantiate(fruits[Random.Range(0, fruits.Count)], fruitPosition.transform.position, transform.rotation);
-            fruitInfo fruit = randFruit.GetComponent<fruitInfo>();
-            fruit.fruitID = tempID;
-            spawnedFruits.Add(randFruit);
-            tempID++;
-        }
-        tempID = 1;
-        money = money - 1;
-
-        checkForMatchingColumns();
+        spawnFruits(); //checks if any columns want to be held and spawns fruits
 
         //if (fruitID1 == fruitID2 && fruitID1 == fruitID3)
         //{
         //    winTxt.text = "MEGA VICTORY";
         //    money = money + 10;
         //}
+    }
+    public void spawnFruits()
+    {
+        if (fristHold == 0 && secondHold == 0) // if nothing want to be held
+        {
+            foreach (GameObject fruitPosition in fruitPositions)    //spawn new fruits
+            {
+                GameObject randFruit = Instantiate(fruits[Random.Range(0, fruits.Count)], fruitPosition.transform.position, transform.rotation);
+                fruitInfo fruit = randFruit.GetComponent<fruitInfo>();
+                fruit.fruitID = tempID;
+                if (tempID == 0 || tempID == 5 || tempID == 10)
+                {
+                    fruit.column = 1;
+                }
+                if (tempID == 1 || tempID == 6 || tempID == 11)
+                {
+                    fruit.column = 2;
+                }
+                if (tempID == 2 || tempID == 7 || tempID == 12)
+                {
+                    fruit.column = 3;
+                }
+                if (tempID == 3 || tempID == 8 || tempID == 13)
+                {
+                    fruit.column = 4;
+                }
+                if (tempID == 4 || tempID == 9 || tempID == 14)
+                {
+                    fruit.column = 5;
+                }
+                spawnedFruits.Add(randFruit);
+                tempID++;
+            }
+            money = money - 1;
+            tempID = 0;
+            return;
+        }
+        else
+        {
+            for (int i = 0; i < 15; i++)
+            {
+                fruitInfo FruitInfo = spawnedFruits[i].GetComponent<fruitInfo>();
+                if (FruitInfo.column == fristHold || FruitInfo.column == secondHold)
+                {
+                    continue;
+                }
+                else
+                {
+                    Destroy(spawnedFruits[i]);
+                    spawnedFruits[i] = Instantiate(fruits[Random.Range(0, fruits.Count)], fruitPositions[i].transform.position, transform.rotation);
+                }
+            }
+            //FruitInfo FruitInfo = spawnedFruits[0].GetComponent<fruitInfo>();
+            //if (FruitInfo.column == fristHold || FruitInfo.column == secondHold)
+            //{
+            //
+            //}
+            //foreach (GameObject fruit in spawnedFruits)
+            //{
+            //    fruitInfo fruitInfo = fruit.GetComponent<fruitInfo>();
+            //    if (fruitInfo.column == fristHold || fruitInfo.column == secondHold)
+            //    {
+            //        continue;
+            //    }
+            //    else
+            //    {
+            //        int ID = fruitInfo.fruitID;
+            //        Destroy(spawnedFruits[ID]);
+            //        spawnedFruits[ID] = Instantiate(fruits[Random.Range(0, fruits.Count)], fruitPositions[ID].transform.position, transform.rotation);
+            //    }
+            //}
+        }
+        //Destroy(spawnedFruits[14]);
+        //spawnedFruits[14] = Instantiate(fruits[Random.Range(0, fruits.Count)], fruitPositions[14].transform.position, transform.rotation);
+
+        fristHold = 0;
+        secondHold = 0;
     }
 
     public void checkForWinConditions()
@@ -78,37 +157,31 @@ public class gameScript : MonoBehaviour
         {
             fruit.name = fruit.name.Replace("(Clone)", "");
         }
-        lineOfFive();
-        linesOfThree();
+        checkForSpades();
+        checkForLinesOfFive();
+        checkForLinesOfThree();
         checkForDiagonals();
         checkForZigZag();
+        checkForColumns();
         checkForCoins();
         calculateWonPoints();
     }
-    public void checkForMatchingColumns() //check for matching columns and calls functions to reroll them
+    public void checkForSpades()
     {
-        if (spawnedFruits[0].name == spawnedFruits[5].name && spawnedFruits[0].name == spawnedFruits[10].name)
+        int spades = 0;
+        foreach (GameObject coin in spawnedFruits)
         {
-            rerollFirstColumn();
+            if (coin.name == "spade")
+            {
+                spades++;
+            }
         }
-        if (spawnedFruits[1].name == spawnedFruits[6].name && spawnedFruits[1].name == spawnedFruits[11].name)
+        if (spades >= 3)
         {
-            rerollSecondColumn();
-        }
-        if (spawnedFruits[2].name == spawnedFruits[7].name && spawnedFruits[2].name == spawnedFruits[12].name)
-        {
-            rerollThirdColumn();
-        }
-        if (spawnedFruits[3].name == spawnedFruits[8].name && spawnedFruits[3].name == spawnedFruits[13].name)
-        {
-            rerollFourthColumn();
-        }
-        if (spawnedFruits[4].name == spawnedFruits[9].name && spawnedFruits[4].name == spawnedFruits[14].name)
-        {
-            rerollFifthColumn();
+            spadeMultiply = true;
         }
     }
-    public void lineOfFive()
+    public void checkForLinesOfFive() // check for lines of five
     {
         //line of five times the value of the fruit by five
         //check for top line
@@ -116,24 +189,24 @@ public class gameScript : MonoBehaviour
         {
             Debug.Log("line of five");
             int value = fruitValue(spawnedFruits[0].name);
-            wins.Add(new Vector2Int(value, 5));
+            wins.Add(new Vector2Int(value, 15));
         }
         //check for middle line
         if (spawnedFruits[5].name == spawnedFruits[6].name && spawnedFruits[5].name == spawnedFruits[7].name && spawnedFruits[5].name == spawnedFruits[8].name && spawnedFruits[5].name == spawnedFruits[9].name)
         {
             Debug.Log("line of five");
             int value = fruitValue(spawnedFruits[5].name);
-            wins.Add(new Vector2Int(value, 5));
+            wins.Add(new Vector2Int(value, 15));
         }
         //check for bottom line
         if (spawnedFruits[10].name == spawnedFruits[11].name && spawnedFruits[10].name == spawnedFruits[12].name && spawnedFruits[10].name == spawnedFruits[13].name && spawnedFruits[10].name == spawnedFruits[14].name)
         {
             Debug.Log("line of five");
             int value = fruitValue(spawnedFruits[10].name);
-            wins.Add(new Vector2Int(value, 5));
+            wins.Add(new Vector2Int(value, 15));
         }
     }
-    public void linesOfThree()
+    public void checkForLinesOfThree() // check for lines of three, four of the same in line counts as two lines
     {
         //lines of three times the value of the fruit by three
         //check for top line
@@ -194,7 +267,7 @@ public class gameScript : MonoBehaviour
             wins.Add(new Vector2Int(value, 3));
         }
     }
-    public void checkForDiagonals()
+    public void checkForDiagonals() // check for diagonal patterns
     {
         //check for diagonals where it starts with 0
         if (spawnedFruits[0].name == spawnedFruits[6].name && spawnedFruits[0].name == spawnedFruits[12].name)
@@ -238,35 +311,68 @@ public class gameScript : MonoBehaviour
             wins.Add(new Vector2Int(value, 6));
         }
     }
-    public void checkForZigZag()
+    public void checkForZigZag() // check for zigzag patterns
     {
         //check for zigzag pattern
         if (spawnedFruits[5].name == spawnedFruits[1].name && spawnedFruits[5].name == spawnedFruits[7].name && spawnedFruits[5].name == spawnedFruits[3].name && spawnedFruits[5].name == spawnedFruits[9].name)
         {
             Debug.Log("zigzag");
             int value = fruitValue(spawnedFruits[5].name);
-            wins.Add(new Vector2Int(value, 10));
+            wins.Add(new Vector2Int(value, 30));
         }
         if (spawnedFruits[5].name == spawnedFruits[11].name && spawnedFruits[5].name == spawnedFruits[7].name && spawnedFruits[5].name == spawnedFruits[13].name && spawnedFruits[5].name == spawnedFruits[9].name)
         {
             Debug.Log("zigzag");
             int value = fruitValue(spawnedFruits[5].name);
-            wins.Add(new Vector2Int(value, 10));
+            wins.Add(new Vector2Int(value, 30));
         }
         if (spawnedFruits[10].name == spawnedFruits[6].name && spawnedFruits[10].name == spawnedFruits[12].name && spawnedFruits[10].name == spawnedFruits[8].name && spawnedFruits[10].name == spawnedFruits[14].name)
         {
             Debug.Log("zigzag");
             int value = fruitValue(spawnedFruits[10].name);
-            wins.Add(new Vector2Int(value, 10));
+            wins.Add(new Vector2Int(value, 30));
         }
         if (spawnedFruits[0].name == spawnedFruits[6].name && spawnedFruits[0].name == spawnedFruits[2].name && spawnedFruits[0].name == spawnedFruits[8].name && spawnedFruits[0].name == spawnedFruits[4].name)
         {
             Debug.Log("zigzag");
             int value = fruitValue(spawnedFruits[0].name);
-            wins.Add(new Vector2Int(value, 10));
+            wins.Add(new Vector2Int(value, 30));
         }
     }
-    public void checkForCoins()
+    public void checkForColumns() //check for matching columns
+    {
+        if (spawnedFruits[0].name == spawnedFruits[5].name && spawnedFruits[0].name == spawnedFruits[10].name)
+        {
+            Debug.Log("frist column");
+            int value = fruitValue(spawnedFruits[0].name);
+            wins.Add(new Vector2Int(value, 4));
+        }
+        if (spawnedFruits[1].name == spawnedFruits[6].name && spawnedFruits[1].name == spawnedFruits[11].name)
+        {
+            Debug.Log("frist column");
+            int value = fruitValue(spawnedFruits[1].name);
+            wins.Add(new Vector2Int(value, 4));
+        }
+        if (spawnedFruits[2].name == spawnedFruits[7].name && spawnedFruits[2].name == spawnedFruits[12].name)
+        {
+            Debug.Log("frist column");
+            int value = fruitValue(spawnedFruits[2].name);
+            wins.Add(new Vector2Int(value, 4));
+        }
+        if (spawnedFruits[3].name == spawnedFruits[8].name && spawnedFruits[3].name == spawnedFruits[13].name)
+        {
+            Debug.Log("frist column");
+            int value = fruitValue(spawnedFruits[3].name);
+            wins.Add(new Vector2Int(value, 4));
+        }
+        if (spawnedFruits[4].name == spawnedFruits[9].name && spawnedFruits[4].name == spawnedFruits[14].name)
+        {
+            Debug.Log("frist column");
+            int value = fruitValue(spawnedFruits[4].name);
+            wins.Add(new Vector2Int(value, 4));
+        }
+    }
+    public void checkForCoins() // check if theres coins, theyre worth one even if not being in any patterns
     {
         int amountOfCoins = 0;
         foreach (GameObject coin in spawnedFruits)
@@ -279,10 +385,10 @@ public class gameScript : MonoBehaviour
         }
         if (amountOfCoins > 0)
         {
-            Debug.Log(amountOfCoins + " coins");   
+            Debug.Log(amountOfCoins + " coins");
         }
     }
-    public void checkForFreeSpins()
+    public void checkForFreeSpins() // gives back 1 money "free spin"
     {
         foreach (GameObject free in spawnedFruits)
         {
@@ -311,15 +417,11 @@ public class gameScript : MonoBehaviour
         {
             return 5;
         }
-        if (fruit == "lucky7")
-        {
-            return 7;
-        }
-        if (fruit == "cherry")
+        if (fruit == "cherry" || fruit == "watermelon")
         {
             return 10;
         }
-        if (fruit == "free" || fruit == "spade")
+        if (fruit == "lucky7")
         {
             return 20;
         }
@@ -327,103 +429,148 @@ public class gameScript : MonoBehaviour
     }
     public void calculateWonPoints()    //wins are stored into the "wins" list and counted here, done so that the player can win multiple times in one round
     {
+        int points = 0;
         foreach (Vector2Int win in wins)
         {
-            pointsWon = pointsWon + (win.x * win.y);
+            points = points + (win.x * win.y);
         }
+        if (spadeMultiply)
+        {
+            points = points * 2;
+        }
+        pointsWon = pointsWon + points;
+        spadeMultiply = false;
         wins.Clear();
     }
 
-    #region checking columns
-    public void rerollFirstColumn()
+    #region hold columns
+    public void holdFirstColumn()
     {
-        if (amountOfRerolls <= 0)
+        if (amountOfHolds <= 0 || cashIn == false)
         {
             return;
         }
-        wait();
-        Destroy(spawnedFruits[0]);
-        spawnedFruits[0] = Instantiate(fruits[Random.Range(0, fruits.Count)], fruitPositions[0].transform.position, transform.rotation);
-
-        Destroy(spawnedFruits[5]);
-        spawnedFruits[5] = Instantiate(fruits[Random.Range(0, fruits.Count)], fruitPositions[5].transform.position, transform.rotation);
-
-        Destroy(spawnedFruits[10]);
-        spawnedFruits[10] = Instantiate(fruits[Random.Range(0, fruits.Count)], fruitPositions[10].transform.position, transform.rotation);
+        GameObject parent = holdButtons[0];
+        parent.transform.Find("hold_pressed").gameObject.SetActive(true);
+        parent.transform.Find("hold").gameObject.SetActive(false);
+        if (fristHold == 0)
+        {
+            fristHold = 1;
+            amountOfHolds--;
+            return;
+        }
+        if (secondHold == 0)
+        {
+            secondHold = 1;
+            amountOfHolds--;
+            turnButtonsRed();
+        }
     }
-    public void rerollSecondColumn()
+    public void holdSecondColumn()
     {
-        if (amountOfRerolls <= 0)
+        if (amountOfHolds <= 0 || cashIn == false)
         {
             return;
         }
-        wait();
-        Destroy(spawnedFruits[1]);
-        spawnedFruits[1] = Instantiate(fruits[Random.Range(0, fruits.Count)], fruitPositions[1].transform.position, transform.rotation);
-
-        Destroy(spawnedFruits[6]);
-        spawnedFruits[6] = Instantiate(fruits[Random.Range(0, fruits.Count)], fruitPositions[6].transform.position, transform.rotation);
-
-        Destroy(spawnedFruits[11]);
-        spawnedFruits[11] = Instantiate(fruits[Random.Range(0, fruits.Count)], fruitPositions[11].transform.position, transform.rotation);
+        GameObject parent = holdButtons[1];
+        parent.transform.Find("hold_pressed").gameObject.SetActive(true);
+        parent.transform.Find("hold").gameObject.SetActive(false);
+        if (fristHold == 0)
+        {
+            fristHold = 2;
+            amountOfHolds--;
+            return;
+        }
+        if (secondHold == 0)
+        {
+            secondHold = 2;
+            amountOfHolds--;
+            turnButtonsRed();
+        }
     }
-    public void rerollThirdColumn()
+    public void holdThirdColumn()
     {
-        if (amountOfRerolls <= 0)
+        if (amountOfHolds <= 0 || cashIn == false)
         {
             return;
         }
-        wait();
-        Destroy(spawnedFruits[2]);
-        spawnedFruits[2] = Instantiate(fruits[Random.Range(0, fruits.Count)], fruitPositions[2].transform.position, transform.rotation);
-
-        Destroy(spawnedFruits[7]);
-        spawnedFruits[7] = Instantiate(fruits[Random.Range(0, fruits.Count)], fruitPositions[7].transform.position, transform.rotation);
-
-        Destroy(spawnedFruits[12]);
-        spawnedFruits[12] = Instantiate(fruits[Random.Range(0, fruits.Count)], fruitPositions[12].transform.position, transform.rotation);
+        GameObject parent = holdButtons[2];
+        parent.transform.Find("hold_pressed").gameObject.SetActive(true);
+        parent.transform.Find("hold").gameObject.SetActive(false);
+        if (fristHold == 0)
+        {
+            fristHold = 3;
+            amountOfHolds--;
+            return;
+        }
+        if (secondHold == 0)
+        {
+            secondHold = 3;
+            amountOfHolds--;
+            turnButtonsRed();
+        }
     }
-    public void rerollFourthColumn()
+    public void holdFourthColumn()
     {
-        if (amountOfRerolls <= 0)
+        if (amountOfHolds <= 0 || cashIn == false)
         {
             return;
         }
-        wait();
-        Destroy(spawnedFruits[3]);
-        spawnedFruits[3] = Instantiate(fruits[Random.Range(0, fruits.Count)], fruitPositions[3].transform.position, transform.rotation);
-
-        Destroy(spawnedFruits[8]);
-        spawnedFruits[8] = Instantiate(fruits[Random.Range(0, fruits.Count)], fruitPositions[8].transform.position, transform.rotation);
-
-        Destroy(spawnedFruits[13]);
-        spawnedFruits[13] = Instantiate(fruits[Random.Range(0, fruits.Count)], fruitPositions[13].transform.position, transform.rotation);
+        GameObject parent = holdButtons[3];
+        parent.transform.Find("hold_pressed").gameObject.SetActive(true);
+        parent.transform.Find("hold").gameObject.SetActive(false);
+        if (fristHold == 0)
+        {
+            fristHold = 4;
+            amountOfHolds--;
+            return;
+        }
+        if (secondHold == 0)
+        {
+            secondHold = 4;
+            amountOfHolds--;
+            turnButtonsRed();
+        }
     }
-    public void rerollFifthColumn()
+    public void holdFifthColumn()
     {
-        if (amountOfRerolls <= 0)
+        if (amountOfHolds <= 0 || cashIn == false)
         {
             return;
         }
-        wait();
-        Destroy(spawnedFruits[4]);
-        spawnedFruits[4] = Instantiate(fruits[Random.Range(0, fruits.Count)], fruitPositions[4].transform.position, transform.rotation);
-
-        Destroy(spawnedFruits[9]);
-        spawnedFruits[9] = Instantiate(fruits[Random.Range(0, fruits.Count)], fruitPositions[9].transform.position, transform.rotation);
-
-        Destroy(spawnedFruits[14]);
-        spawnedFruits[14] = Instantiate(fruits[Random.Range(0, fruits.Count)], fruitPositions[14].transform.position, transform.rotation);
+        GameObject parent = holdButtons[4];
+        parent.transform.Find("hold_pressed").gameObject.SetActive(true);
+        parent.transform.Find("hold").gameObject.SetActive(false);
+        if (fristHold == 0)
+        {
+            fristHold = 5;
+            amountOfHolds--;
+            return;
+        }
+        if (secondHold == 0)
+        {
+            secondHold = 5;
+            amountOfHolds--;
+            turnButtonsRed();
+        }
     }
-    IEnumerator wait()
+    public void turnButtonsRed()
     {
-        int i = 1;
-        yield return new WaitForSeconds(0.5f);
-        i++;
+        foreach (GameObject button in holdButtons)
+        {
+            string name = button.name.Replace("reroll", "");
+            string dumnum = fristHold.ToString();
+            string dumnum2 = secondHold.ToString();
+            if (name == dumnum || name == dumnum2)
+            {
+                continue;
+            }
+            else
+            {
+                button.transform.Find("hold_red").gameObject.SetActive(true);
+                button.transform.Find("hold").gameObject.SetActive(false);
+            }
+        }
     }
     #endregion
-    public void rerollButtonPressed()
-    {
-        amountOfRerolls -= 1;
-    }
 }
