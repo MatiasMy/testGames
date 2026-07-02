@@ -2,8 +2,9 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
+using UnityEngine.SceneManagement;
 
-public class gameScript : MonoBehaviour //HOLD BUTTONS WORK VISUALLY, SOMETIMES DOESNT HOLD, NOT SURE WHY. AFTER FIXING HOLD BUTTONS CONSIDER DOING SPRITES, ANIMATIONS, ADDING SOUNDS OR STARTING SHOP/TOKENS
+public class gameScript : MonoBehaviour //HOLD BUTTONS WORK VISUALLY, SOMETIMES DOESNT HOLD, NOT SURE WHY. AFTER FIXING HOLD BUTTONS CONSIDER DOING SPRITES, ANIMATIONS, ADDING SOUNDS OR STARTING SHOP/TOKENS ||ACTUALLY START DOING THE INFINITE SPINNING ROLLS, DOUBLE BUTTON, CASH IN BUTTON ADN THE LEVER
 {
     public List<GameObject> fruits;
     public List<GameObject> fruitPositions;
@@ -16,8 +17,8 @@ public class gameScript : MonoBehaviour //HOLD BUTTONS WORK VISUALLY, SOMETIMES 
     private List<Vector2Int> wins = new List<Vector2Int>();
     private bool cashIn = false;
     public int amountOfHolds = 2;
-    public GameObject unpressed;
-    public GameObject pressed;
+    public GameObject playButton;
+    public GameObject cashInButton;
     private bool spadeMultiply = false;
     private int tempID = 0;
     private int fristHold = 0;
@@ -28,23 +29,31 @@ public class gameScript : MonoBehaviour //HOLD BUTTONS WORK VISUALLY, SOMETIMES 
         winTxt.text = "";
         moneyTxt.text = "points " + pointsWon;
     }
-    public void play()  //called when the play button is pressed
+    public void play()  //called when the play button or cash in button is pressed, checks if the player is cashing in or playing and does the appropriate actions
     {
-        if (cashIn == true)
+        if (cashIn == true) // Cash in
         {
             checkForWinConditions(); //check for win conditions after the fruits have been spawned
             cashIn = false;
             amountOfHolds = 0;
             moneyTxt.text = "points " + pointsWon;
             winTxt.text = "";
-            unpressed.SetActive(true);
-            pressed.SetActive(false);
+            cashInButton.transform.Find("cash-in_button_pressed").gameObject.SetActive(true);
+            playButton.transform.Find("play_button").gameObject.SetActive(true);
+            cashInButton.transform.Find("cash-in_button").gameObject.SetActive(false);
+            playButton.transform.Find("play_button_pressed").gameObject.SetActive(false);
+            cashInButton.GetComponent<UnityEngine.UI.Button>().interactable = false;
+            playButton.GetComponent<UnityEngine.UI.Button>().interactable = true;
             return;
         }
-        else
+        else // play
         {
-            pressed.SetActive(true);
-            unpressed.SetActive(false);
+            cashInButton.GetComponent<UnityEngine.UI.Button>().interactable = true;
+            playButton.GetComponent<UnityEngine.UI.Button>().interactable = false;
+            cashInButton.transform.Find("cash-in_button_pressed").gameObject.SetActive(false);
+            playButton.transform.Find("play_button").gameObject.SetActive(false);
+            cashInButton.transform.Find("cash-in_button").gameObject.SetActive(true);
+            playButton.transform.Find("play_button_pressed").gameObject.SetActive(true);
             cashIn = true;
             amountOfHolds = 2;
             foreach (GameObject button in holdButtons)
@@ -55,7 +64,7 @@ public class gameScript : MonoBehaviour //HOLD BUTTONS WORK VISUALLY, SOMETIMES 
             }
         }
 
-        if (fristHold == 0)
+        if (fristHold == 0 && secondHold == 0) //if nothing is being held, clear the previous fruits from the screen
         {
             foreach (GameObject fruit in spawnedFruits) //clear the previous fruits from the screen
             {
@@ -67,11 +76,6 @@ public class gameScript : MonoBehaviour //HOLD BUTTONS WORK VISUALLY, SOMETIMES 
 
         spawnFruits(); //checks if any columns want to be held and spawns fruits
 
-        //if (fruitID1 == fruitID2 && fruitID1 == fruitID3)
-        //{
-        //    winTxt.text = "MEGA VICTORY";
-        //    money = money + 10;
-        //}
     }
     public void spawnFruits()
     {
@@ -81,33 +85,9 @@ public class gameScript : MonoBehaviour //HOLD BUTTONS WORK VISUALLY, SOMETIMES 
             {
                 GameObject randFruit = Instantiate(fruits[Random.Range(0, fruits.Count)], fruitPosition.transform.position, transform.rotation);
                 fruitInfo fruit = randFruit.GetComponent<fruitInfo>();
-                fruit.fruitID = tempID;
-                if (tempID == 0 || tempID == 5 || tempID == 10)
-                {
-                    fruit.column = 1;
-                }
-                if (tempID == 1 || tempID == 6 || tempID == 11)
-                {
-                    fruit.column = 2;
-                }
-                if (tempID == 2 || tempID == 7 || tempID == 12)
-                {
-                    fruit.column = 3;
-                }
-                if (tempID == 3 || tempID == 8 || tempID == 13)
-                {
-                    fruit.column = 4;
-                }
-                if (tempID == 4 || tempID == 9 || tempID == 14)
-                {
-                    fruit.column = 5;
-                }
                 spawnedFruits.Add(randFruit);
-                tempID++;
             }
             money = money - 1;
-            tempID = 0;
-            return;
         }
         else
         {
@@ -124,28 +104,39 @@ public class gameScript : MonoBehaviour //HOLD BUTTONS WORK VISUALLY, SOMETIMES 
                     spawnedFruits[i] = Instantiate(fruits[Random.Range(0, fruits.Count)], fruitPositions[i].transform.position, transform.rotation);
                 }
             }
-            //FruitInfo FruitInfo = spawnedFruits[0].GetComponent<fruitInfo>();
-            //if (FruitInfo.column == fristHold || FruitInfo.column == secondHold)
-            //{
-            //
-            //}
-            //foreach (GameObject fruit in spawnedFruits)
-            //{
-            //    fruitInfo fruitInfo = fruit.GetComponent<fruitInfo>();
-            //    if (fruitInfo.column == fristHold || fruitInfo.column == secondHold)
-            //    {
-            //        continue;
-            //    }
-            //    else
-            //    {
-            //        int ID = fruitInfo.fruitID;
-            //        Destroy(spawnedFruits[ID]);
-            //        spawnedFruits[ID] = Instantiate(fruits[Random.Range(0, fruits.Count)], fruitPositions[ID].transform.position, transform.rotation);
-            //    }
-            //}
         }
-        //Destroy(spawnedFruits[14]);
-        //spawnedFruits[14] = Instantiate(fruits[Random.Range(0, fruits.Count)], fruitPositions[14].transform.position, transform.rotation);
+        foreach (GameObject fruity in spawnedFruits)
+        {
+            fruitInfo fruit = fruity.GetComponent<fruitInfo>();
+            fruit.fruitID = tempID;
+            tempID++;
+        }
+        tempID = 0;
+
+        foreach (GameObject fruity in spawnedFruits)
+        {
+            fruitInfo fruit = fruity.GetComponent<fruitInfo>();
+            if (fruit.fruitID == 0 || fruit.fruitID == 5 || fruit.fruitID == 10)
+            {
+                fruit.column = 1;
+            }
+            if (fruit.fruitID == 1 || fruit.fruitID == 6 || fruit.fruitID == 11)
+            {
+                fruit.column = 2;
+            }
+            if (fruit.fruitID == 2 || fruit.fruitID == 7 || fruit.fruitID == 12)
+            {
+                fruit.column = 3;
+            }
+            if (fruit.fruitID == 3 || fruit.fruitID == 8 || fruit.fruitID == 13)
+            {
+                fruit.column = 4;
+            }
+            if (fruit.fruitID == 4 || fruit.fruitID == 9 || fruit.fruitID == 14)
+            {
+                fruit.column = 5;
+            }
+        }
 
         fristHold = 0;
         secondHold = 0;
@@ -558,10 +549,10 @@ public class gameScript : MonoBehaviour //HOLD BUTTONS WORK VISUALLY, SOMETIMES 
     {
         foreach (GameObject button in holdButtons)
         {
-            string name = button.name.Replace("reroll", "");
-            string dumnum = fristHold.ToString();
-            string dumnum2 = secondHold.ToString();
-            if (name == dumnum || name == dumnum2)
+            string buttonName = button.name.Replace("reroll", ""); //remove the "reroll" from the name so that it can be compared to the hold numbers that are turned into strings
+            string firstHoldStr = fristHold.ToString();
+            string secondHoldStr = secondHold.ToString();
+            if (buttonName == firstHoldStr || buttonName == secondHoldStr)
             {
                 continue;
             }
