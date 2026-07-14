@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
-using UnityEngine.SceneManagement;
+using UnityEngine.SceneManagement; //MAKE HOLD COST MONEY OR POINTS!!!!!!!!!!!!
 
 public class gameScript : MonoBehaviour //HOLD BUTTONS WORK VISUALLY, SOMETIMES DOESNT HOLD, NOT SURE WHY. AFTER FIXING HOLD BUTTONS CONSIDER DOING SPRITES, ANIMATIONS, ADDING SOUNDS OR STARTING SHOP/TOKENS ||ACTUALLY START DOING THE INFINITE SPINNING ROLLS, DOUBLE BUTTON, CASH IN BUTTON ADN THE LEVER
 {
@@ -75,7 +75,6 @@ public class gameScript : MonoBehaviour //HOLD BUTTONS WORK VISUALLY, SOMETIMES 
         }
 
         spawnFruits(); //checks if any columns want to be held and spawns fruits
-
     }
     public void spawnFruits()
     {
